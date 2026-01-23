@@ -1,3 +1,1 @@
-db_connect.php
-uploads/
-.DS_Store
+db_config.php

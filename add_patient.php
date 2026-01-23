@@ -1,4 +1,9 @@
 <?php
+// Enable error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 
 if (!isset($_SESSION['doctor_id'])) {
@@ -6,23 +11,26 @@ if (!isset($_SESSION['doctor_id'])) {
     exit();
 }
 
-require_once 'db_connect.php';
+// FIXED: Make sure this matches your actual database config file name
+require_once 'db_config.php';
 
 $doctor_id = $_SESSION['doctor_id'];
 $doctor_name = $_SESSION['doctor_name'];
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $patient_name = $_POST['patient_name'];
-    $age = $_POST['age'];
-    $weight = $_POST['weight'];
+    $patient_name = trim($_POST['patient_name']);
+    $age = intval($_POST['age']);
+    $weight = floatval($_POST['weight']);
     $gender = $_POST['gender'];
     $has_allergies = isset($_POST['has_allergies']) ? 1 : 0;
     $date_of_birth = $_POST['date_of_birth'];
-    $medical_history = $_POST['medical_history'];
+    $medical_history = trim($_POST['medical_history']);
     
     // Handle image upload
     $patient_image = NULL;
+    $upload_error = NULL;
+    
     if (isset($_FILES['patient_image']) && $_FILES['patient_image']['error'] == 0) {
         $upload_dir = 'uploads/';
         
@@ -54,15 +62,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
     
-    // Insert into database
-    try {
-        $stmt = $pdo->prepare("INSERT INTO patients (doctor_id, patient_name, age, weight, gender, has_allergies, date_of_birth, medical_history, patient_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$doctor_id, $patient_name, $age, $weight, $gender, $has_allergies, $date_of_birth, $medical_history, $patient_image]);
-        
-        header('Location: dashboard.php');
-        exit();
-    } catch(PDOException $e) {
-        $error_message = "Error adding patient: " . $e->getMessage();
+    // Insert into database - only proceed if no upload errors
+    if ($upload_error === NULL) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO patients (doctor_id, patient_name, age, weight, gender, has_allergies, date_of_birth, medical_history, patient_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$doctor_id, $patient_name, $age, $weight, $gender, $has_allergies, $date_of_birth, $medical_history, $patient_image]);
+            
+            header('Location: dashboard.php');
+            exit();
+        } catch(PDOException $e) {
+            $error_message = "Error adding patient: " . $e->getMessage();
+        }
     }
 }
 ?>
@@ -115,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="alert alert-danger"><?php echo $error_message; ?></div>
                         <?php endif; ?>
                         
-                        <?php if (isset($upload_error)): ?>
+                        <?php if (isset($upload_error) && $upload_error !== NULL): ?>
                             <div class="alert alert-warning"><?php echo $upload_error; ?></div>
                         <?php endif; ?>
                         
