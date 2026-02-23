@@ -1,0 +1,9 @@
+name: EHR CI/CD
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: pip install pytest
+    - run: pytest test_ehr.py
