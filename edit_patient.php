@@ -4,6 +4,7 @@ ini_set('display_errors', 1);
 
 session_start();
 require_once 'db_connect.php';
+require_once 'audit_logger.php';
 
 if (!isset($_SESSION['doctor_id'])) {
     header("Location: login.php");
@@ -100,6 +101,11 @@ if (isset($_POST['update_patient'])) {
         $update_sql = "UPDATE patients SET " . implode(', ', $updates) . " WHERE id = $patient_id AND doctor_id = {$_SESSION['doctor_id']}";
         
         if (mysqli_query($conn, $update_sql)) {
+            // Fetch the new values for the audit trail
+            $new_result = mysqli_query($conn, "SELECT * FROM patients WHERE id = $patient_id");
+            $new_patient = mysqli_fetch_assoc($new_result);
+            log_audit($conn, $_SESSION['doctor_id'], 'UPDATE', 'patients', $patient_id, $patient, $new_patient);
+
             header("Location: view_patient.php?id=$patient_id");
             exit();
         } else {

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'db_connect.php';
+require_once 'audit_logger.php';
 
 // Check if doctor is logged in
 if (!isset($_SESSION['doctor_id'])) {
@@ -38,6 +39,7 @@ $delete_stmt = $conn->prepare("DELETE FROM patients WHERE id = ? AND doctor_id =
 $delete_stmt->bind_param("ii", $patient_id, $doctor_id);
 
 if ($delete_stmt->execute()) {
+    log_audit($conn, $doctor_id, 'DELETE', 'patients', $patient_id, $patient, null);
     $_SESSION['success'] = "Patient '" . $patient['patient_name'] . "' deleted successfully!";
 } else {
     $_SESSION['error'] = "Failed to delete patient!";
